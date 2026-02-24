@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ХімДетектив — Лабораторія якісних реакцій</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧪</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#f4f2ee;color:#333;min-height:100vh;overflow-x:hidden;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes bubbleUp{0%{transform:translateY(0) scale(1);opacity:.7}100%{transform:translateY(-55px) scale(.2);opacity:0}}
+@keyframes precipForm{from{height:0;opacity:0}to{opacity:1}}
+@keyframes smellWave{0%{transform:translateY(0) scale(1);opacity:.5}100%{transform:translateY(-35px) scale(1.6);opacity:0}}
+@keyframes dropIn{0%{transform:translateY(-14px);opacity:0}60%{transform:translateY(2px)}100%{transform:translateY(0);opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;outline:none;}
+button:active{transform:scale(.97)!important;}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:#f4f2ee;}
+::-webkit-scrollbar-thumb{background:#d5d3cb;border-radius:3px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script>
+const{useState,useEffect,useCallback,useRef,createElement:h}=React;
+
+/* ═══════════ DATA ═══════════ */
+const SUBSTANCES={
+  NaCl:{id:"NaCl",formula:"NaCl",name:"Хлорид натрію",solColor:null},
+  NaBr:{id:"NaBr",formula:"NaBr",name:"Бромід натрію",solColor:null},
+  KI:{id:"KI",formula:"KI",name:"Йодид калію",solColor:null},
+  Na2SO4:{id:"Na2SO4",formula:"Na₂SO₄",name:"Сульфат натрію",solColor:null},
+  Na2CO3:{id:"Na2CO3",formula:"Na₂CO₃",name:"Карбонат натрію",solColor:null},
+  NaOH:{id:"NaOH",formula:"NaOH",name:"Гідроксид натрію",solColor:null},
+  HCl:{id:"HCl",formula:"HCl",name:"Хлоридна кислота",solColor:null},
+  H2SO4:{id:"H2SO4",formula:"H₂SO₄",name:"Сульфатна кислота",solColor:null},
+  FeCl3:{id:"FeCl3",formula:"FeCl₃",name:"Хлорид заліза(III)",solColor:"#c49430"},
+  FeCl2:{id:"FeCl2",formula:"FeCl₂",name:"Хлорид заліза(II)",solColor:"#88aa88"},
+  CuSO4:{id:"CuSO4",formula:"CuSO₄",name:"Сульфат міді(II)",solColor:"#5599cc"},
+  NH4Cl:{id:"NH4Cl",formula:"NH₄Cl",name:"Хлорид амонію",solColor:null},
+  BaCl2:{id:"BaCl2",formula:"BaCl₂",name:"Хлорид барію",solColor:null},
+  AlCl3:{id:"AlCl3",formula:"AlCl₃",name:"Хлорид алюмінію",solColor:null},
+  Na2SiO3:{id:"Na2SiO3",formula:"Na₂SiO₃",name:"Силікат натрію",solColor:null},
+  KNO3:{id:"KNO3",formula:"KNO₃",name:"Нітрат калію",solColor:null},
+  Na2S:{id:"Na2S",formula:"Na₂S",name:"Сульфід натрію",solColor:null},
+  Na3PO4:{id:"Na3PO4",formula:"Na₃PO₄",name:"Фосфат натрію",solColor:null},
+  ZnCl2:{id:"ZnCl2",formula:"ZnCl₂",name:"Хлорид цинку",solColor:null},
+  CrCl3:{id:"CrCl3",formula:"CrCl₃",name:"Хлорид хрому(III)",solColor:"#5a8a5a"},
+  Glucose:{id:"Glucose",formula:"C₆H₁₂O₆",name:"Глюкоза",solColor:null},
+  Glycerol:{id:"Glycerol",formula:"C₃H₅(OH)₃",name:"Гліцерин",solColor:null},
+  HCHO:{id:"HCHO",formula:"HCHO",name:"Формальдегід (розч.)",solColor:null},
+};
+
+const ALL_REAGENTS=[
+  {id:"NaOH_r",formula:"NaOH",name:"Луг",icon:"🧴",cat:"bases"},
+  {id:"KOH_r",formula:"KOH",name:"Їдке калі",icon:"🧴",cat:"bases"},
+  {id:"AgNO3_r",formula:"AgNO₃",name:"Нітрат срібла",icon:"🪙",cat:"salts"},
+  {id:"BaCl2_r",formula:"BaCl₂",name:"Хлорид барію",icon:"🧪",cat:"salts"},
+  {id:"Pb_NO3_r",formula:"Pb(NO₃)₂",name:"Нітрат свинцю",icon:"⚫",cat:"salts"},
+  {id:"HCl_r",formula:"HCl",name:"Хлоридна кислота",icon:"⚗️",cat:"acids"},
+  {id:"H2SO4_r",formula:"H₂SO₄",name:"Сульфатна кислота",icon:"⚗️",cat:"acids"},
+  {id:"HNO3_r",formula:"HNO₃",name:"Нітратна кислота",icon:"⚗️",cat:"acids"},
+  {id:"phenol",formula:"Фф",name:"Фенолфталеїн",icon:"💗",cat:"indicators"},
+  {id:"litmus",formula:"Лакм.",name:"Лакмус",icon:"📜",cat:"indicators"},
+  {id:"methyl_o",formula:"МО",name:"Метилоранж",icon:"🟠",cat:"indicators"},
+  {id:"KSCN_r",formula:"KSCN",name:"Тіоціанат калію",icon:"🔴",cat:"special"},
+  {id:"K4FeCN6",formula:"K₄[Fe(CN)₆]",name:"Жовта кров'яна сіль",icon:"💛",cat:"special"},
+  {id:"K3FeCN6",formula:"K₃[Fe(CN)₆]",name:"Червона кров'яна сіль",icon:"❤️",cat:"special"},
+  {id:"CuOH2",formula:"Cu(OH)₂",name:"Cu(OH)₂ без нагрів.",icon:"🔵",cat:"special"},
+  {id:"CuOH2_hot",formula:"Cu(OH)₂🔥",name:"Cu(OH)₂ + нагрів.",icon:"🔥",cat:"special"},
+  {id:"starch",formula:"Крохмаль",name:"Крохмальний р-н",icon:"🫧",cat:"special"},
+  {id:"AgNH3_r",formula:"[Ag(NH₃)₂]OH",name:"Аміачний р-н Ag₂O",icon:"🪞",cat:"special"},
+  {id:"Na2CO3_r",formula:"Na₂CO₃",name:"Карбонат натрію",icon:"🧂",cat:"salts"},
+  {id:"FeCl3_r",formula:"FeCl₃",name:"Хлорид заліза(III)",icon:"🟤",cat:"salts"},
+];
+
+const N={type:"none",desc:"Без видимих змін"};
+const RX={};
+function def(s,r,d){if(!RX[s])RX[s]={};RX[s][r]=d;}
+function fill(s){if(!RX[s])RX[s]={};ALL_REAGENTS.forEach(function(r){if(!RX[s][r.id])RX[s][r.id]=N;});}
+
+def("NaCl","AgNO3_r",{type:"precipitate",precipColor:"#d8d6c0",desc:"Білий сирнистий осад AgCl↓"});
+def("NaCl","litmus",{type:"indicator",solChange:"#9b70b6",desc:"Фіолетовий (нейтральне)"});
+def("NaCl","methyl_o",{type:"indicator",solChange:"#e8a020",desc:"Жовтий (нейтральне)"});
+def("NaCl","Pb_NO3_r",{type:"precipitate",precipColor:"#d8d8d0",desc:"Білий осад PbCl₂↓"});
+
+def("NaBr","AgNO3_r",{type:"precipitate",precipColor:"#e8e0a0",desc:"Блідо-жовтий осад AgBr↓"});
+def("NaBr","litmus",{type:"indicator",solChange:"#9b70b6",desc:"Фіолетовий (нейтральне)"});
+def("NaBr","methyl_o",{type:"indicator",solChange:"#e8a020",desc:"Жовтий (нейтральне)"});
+def("NaBr","Pb_NO3_r",{type:"precipitate",precipColor:"#d8d8d0",desc:"Білий осад PbBr₂↓"});
+
+def("KI","AgNO3_r",{type:"precipitate",precipColor:"#e8c820",desc:"Жовтий осад AgI↓"});
+def("KI","Pb_NO3_r",{type:"precipitate",precipColor:"#ffd700",desc:"Яскраво-жовтий осад PbI₂↓ («золотий дощ»)"});
+def("KI","litmus",{type:"indicator",solChange:"#9b70b6",desc:"Фіолетовий (нейтральне)"});
+def("KI","methyl_o",{type:"indicator",solChange:"#e8a020",desc:"Жовтий (нейтральне)"});
+def("KI","FeCl3_r",{type:"color",solChange:"#6b3500",desc:"Бурий розчин (I₂ виділяється)"});
+
+def("Na2SO4","AgNO3_r",{type:"precipitate",precipColor:"#d5d3cc",desc:"Білий осад Ag₂SO₄↓"});
+def("Na2SO4","BaCl2_r",{type:"precipitate",precipColor:"#d8d8d0",desc:"Білий осад BaSO₄↓ (НЕ розч. в кислотах!)"});
+def("Na2SO4","Pb_NO3_r",{type:"precipitate",precipColor:"#d8d6c8",desc:"Білий осад PbSO₄↓"});
+def("Na2SO4","litmus",{type:"indicator",solChange:"#9b70b6",desc:"Фіолетовий (нейтральне)"});
+def("Na2SO4","methyl_o",{type:"indicator",solChange:"#e8a020",desc:"Жовтий (нейтральне)"});
+
+def("Na2CO3","HCl_r",{type:"gas",desc:"Бульбашки CO₂↑ (вуглекислий газ)"});
+def("Na2CO3","H2SO4_r",{type:"gas",desc:"Бульбашки CO₂↑"});
+def("Na2CO3","HNO3_r",{type:"gas",desc:"Бульбашки CO₂↑"});
+def("Na2CO3","AgNO3_r",{type:"precipitate",precipColor:"#d8d5c0",desc:"Білий осад Ag₂CO₃↓"});
+def("Na2CO3","BaCl2_r",{type:"precipitate",precipColor:"#d8d8d0",desc:"Білий осад BaCO₃↓ (розч. у кислотах)"});
+def("Na2CO3","phenol",{type:"indicator",solChange:"#d63384",desc:"Малинове забарвлення (лужне середовище)"});
+def("Na2CO3","litmus",{type:"indicator",solChange:"#3070cc",desc:"Синій (лужне середовище)"});
+def("Na2CO3","methyl_o",{type:"indicator",solChange:"#e8a020",desc:"Жовтий (лужне середовище)"});
+
+def("NaOH","phenol",{type:"indicator",solChange:"#d63384",desc:"Малинове забарвлення"});
+def("NaOH","litmus",{type:"indicator",solChange:"#3070cc",desc:"Синій"});
+def("NaOH","methyl_o",{type:"indicator",solChange:"#e8a020",desc:"Жовтий"});
+def("NaOH","AgNO3_r",{type:"precipitate",precipColor:"#5a4030",desc:"Бурий осад Ag₂O↓"});
+
+def("HCl","AgNO3_r",{type:"precipitate",precipColor:"#d8d6c0",desc:"Білий сирнистий осад AgCl↓"});
+def("HCl","litmus",{type:"indicator",solChange:"#e04040",desc:"Червоний (кисле)"});
+def("HCl","methyl_o",{type:"indicator",solChange:"#e04040",desc:"Червоний/рожевий (кисле)"});
+def("HCl","Na2CO3_r",{type:"gas",desc:"Бульбашки CO₂↑"});
+
+def("H2SO4","BaCl2_r",{type:"precipitate",precipColor:"#d8d8d0",desc:"Білий осад BaSO₄↓"});
+def("H2SO4","Pb_NO3_r",{type:"precipitate",precipColor:"#d8d6c8",desc:"Білий осад PbSO₄↓"});
+def("H2SO4","litmus",{type:"indicator",solChange:"#e04040",desc:"Червоний (кисле)"});
+def("H2SO4","methyl_o",{type:"indicator",solChange:"#e04040",desc:"Червоний/рожевий (кисле)"});
+def("H2SO4","AgNO3_r",{type:"precipitate",precipColor:"#d5d3cc",desc:"Білий осад Ag₂SO₄↓"});
+def("H2SO4","Na2CO3_r",{type:"gas",desc:"Бульбашки CO₂↑"});
+
+def("FeCl3","NaOH_r",{type:"precipitate",precipColor:"#8B4513",desc:"Бурий осад Fe(OH)₃↓"});
+def("FeCl3","KOH_r",{type:"precipitate",precipColor:"#8B4513",desc:"Бурий осад Fe(OH)₃↓"});
+def("FeCl3","KSCN_r",{type:"color",solChange:"#cc0000",desc:"Кроваво-червоне забарвлення Fe(SCN)₃"});
+def("FeCl3","K4FeCN6",{type:"precipitate",precipColor:"#000088",desc:"Темно-синій осад — берлінська лазур"});
+def("FeCl3","AgNO3_r",{type:"precipitate",precipColor:"#d8d6c0",desc:"Білий сирнистий осад AgCl↓"});
+def("FeCl3","litmus",{type:"indicator",solChange:"#d06040",desc:"Червонуватий (кисле — гідроліз)"});
+def("FeCl3","methyl_o",{type:"indicator",solChange:"#e04040",desc:"Червоний (кисле)"});
+
+def("FeCl2","NaOH_r",{type:"precipitate",precipColor:"#b0c0a8",desc:"Білуватий осад Fe(OH)₂↓ → зеленіє → буріє"});
+def("FeCl2","KOH_r",{type:"precipitate",precipColor:"#b0c0a8",desc:"Білуватий осад Fe(OH)₂↓ → зеленіє"});
+def("FeCl2","K3FeCN6",{type:"precipitate",precipColor:"#000088",desc:"Темно-синій осад — турнбулева синь"});
+def("FeCl2","K4FeCN6",{type:"precipitate",precipColor:"#000088",desc:"Темно-синій осад — турнбулева синь"});
+def("FeCl2","AgNO3_r",{type:"precipitate",precipColor:"#d8d6c0",desc:"Білий сирнистий осад AgCl↓"});
+def("FeCl2","litmus",{type:"indicator",solChange:"#d06040",desc:"Червонуватий (гідроліз)"});
+
+def("CuSO4","NaOH_r",{type:"precipitate",precipColor:"#4169E1",desc:"Блакитний драглистий осад Cu(OH)₂↓"});
+def("CuSO4","KOH_r",{type:"precipitate",precipColor:"#4169E1",desc:"Блакитний драглистий осад Cu(OH)₂↓"});
+def("CuSO4","BaCl2_r",{type:"precipitate",precipColor:"#d8d8d0",desc:"Білий осад BaSO₄↓"});
+def("CuSO4","AgNO3_r",{type:"precipitate",precipColor:"#d5d3cc",desc:"Білий осад Ag₂SO₄↓"});
+def("CuSO4","Na2CO3_r",{type:"precipitate",precipColor:"#50a0a0",desc:"Зеленуватий осад (CuOH)₂CO₃↓"});
+def("CuSO4","litmus",{type:"indicator",solChange:"#d06040",desc:"Червонуватий (гідроліз)"});
+def("CuSO4","K4FeCN6",{type:"precipitate",precipColor:"#8B0000",desc:"Червоно-бурий осад Cu₂[Fe(CN)₆]↓"});
+
+def("NH4Cl","NaOH_r",{type:"smell",desc:"Різкий запах аміаку NH₃↑ (при нагріванні)"});
+def("NH4Cl","KOH_r",{type:"smell",desc:"Різкий запах аміаку NH₃↑"});
+def("NH4Cl","AgNO3_r",{type:"precipitate",precipColor:"#d8d6c0",desc:"Білий сирнистий осад AgCl↓"});
+def("NH4Cl","litmus",{type:"indicator",solChange:"#d06040",desc:"Червонуватий (гідроліз)"});
+
+def("BaCl2","AgNO3_r",{type:"precipitate",precipColor:"#d8d6c0",desc:"Білий сирнистий осад AgCl↓"});
+def("BaCl2","H2SO4_r",{type:"precipitate",precipColor:"#d8d8d0",desc:"Білий осад BaSO₄↓"});
+def("BaCl2","Na2CO3_r",{type:"precipitate",precipColor:"#d8d8d0",desc:"Білий осад BaCO₃↓"});
+def("BaCl2","litmus",{type:"indicator",solChange:"#9b70b6",desc:"Фіолетовий (нейтральне)"});
+
+def("AlCl3","NaOH_r",{type:"precipitate",precipColor:"#d0d0d0",desc:"Білий драглистий осад Al(OH)₃↓ (розч. у надлишку!)"});
+def("AlCl3","KOH_r",{type:"precipitate",precipColor:"#d0d0d0",desc:"Білий драглистий осад Al(OH)₃↓"});
+def("AlCl3","AgNO3_r",{type:"precipitate",precipColor:"#d8d6c0",desc:"Білий сирнистий осад AgCl↓"});
+def("AlCl3","litmus",{type:"indicator",solChange:"#d06040",desc:"Червонуватий (гідроліз)"});
+def("AlCl3","Na2CO3_r",{type:"gas_precip",precipColor:"#d0d0d0",desc:"Білий осад Al(OH)₃↓ + CO₂↑ (взаємний гідроліз!)"});
+
+def("Na2SiO3","HCl_r",{type:"precipitate",precipColor:"#d0d0d0",desc:"Драглистий осад H₂SiO₃↓ (кремнієва к-та)"});
+def("Na2SiO3","H2SO4_r",{type:"precipitate",precipColor:"#d0d0d0",desc:"Драглистий осад H₂SiO₃↓"});
+def("Na2SiO3","phenol",{type:"indicator",solChange:"#d63384",desc:"Малинове (лужне — гідроліз)"});
+def("Na2SiO3","litmus",{type:"indicator",solChange:"#3070cc",desc:"Синій (лужне — гідроліз)"});
+def("Na2SiO3","AgNO3_r",{type:"precipitate",precipColor:"#c8c490",desc:"Жовтуватий осад Ag₂SiO₃↓"});
+def("Na2SiO3","BaCl2_r",{type:"precipitate",precipColor:"#d8d8d0",desc:"Білий осад BaSiO₃↓"});
+
+def("KNO3","litmus",{type:"indicator",solChange:"#9b70b6",desc:"Фіолетовий (нейтральне)"});
+
+def("Na2S","AgNO3_r",{type:"precipitate",precipColor:"#1a1a1a",desc:"Чорний осад Ag₂S↓"});
+def("Na2S","Pb_NO3_r",{type:"precipitate",precipColor:"#1a1a1a",desc:"Чорний осад PbS↓"});
+def("Na2S","HCl_r",{type:"smell",desc:"Запах тухлих яєць — H₂S↑"});
+def("Na2S","FeCl3_r",{type:"precipitate",precipColor:"#1a1a1a",desc:"Чорний осад"});
+def("Na2S","phenol",{type:"indicator",solChange:"#d63384",desc:"Малинове (лужне — гідроліз)"});
+def("Na2S","litmus",{type:"indicator",solChange:"#3070cc",desc:"Синій (лужне — гідроліз)"});
+
+def("Na3PO4","AgNO3_r",{type:"precipitate",precipColor:"#d8c820",desc:"Жовтий осад Ag₃PO₄↓"});
+def("Na3PO4","BaCl2_r",{type:"precipitate",precipColor:"#d8d8d0",desc:"Білий осад Ba₃(PO₄)₂↓"});
+def("Na3PO4","phenol",{type:"indicator",solChange:"#d63384",desc:"Малинове (лужне — гідроліз)"});
+def("Na3PO4","litmus",{type:"indicator",solChange:"#3070cc",desc:"Синій (лужне — гідроліз)"});
+
+def("ZnCl2","NaOH_r",{type:"precipitate",precipColor:"#d0d0d0",desc:"Білий осад Zn(OH)₂↓ (розч. у надлишку — амфотерний!)"});
+def("ZnCl2","KOH_r",{type:"precipitate",precipColor:"#d0d0d0",desc:"Білий осад Zn(OH)₂↓ (амфотерний)"});
+def("ZnCl2","AgNO3_r",{type:"precipitate",precipColor:"#d8d6c0",desc:"Білий сирнистий осад AgCl↓"});
+def("ZnCl2","litmus",{type:"indicator",solChange:"#d06040",desc:"Червонуватий (гідроліз)"});
+
+def("CrCl3","NaOH_r",{type:"precipitate",precipColor:"#556b2f",desc:"Сіро-зелений осад Cr(OH)₃↓ (амфотерний)"});
+def("CrCl3","KOH_r",{type:"precipitate",precipColor:"#556b2f",desc:"Сіро-зелений осад Cr(OH)₃↓"});
+def("CrCl3","AgNO3_r",{type:"precipitate",precipColor:"#d8d6c0",desc:"Білий сирнистий осад AgCl↓"});
+def("CrCl3","litmus",{type:"indicator",solChange:"#d06040",desc:"Червонуватий (гідроліз)"});
+
+def("Glucose","CuOH2",{type:"color",solChange:"#2244dd",desc:"Яскраво-синій розчин (багатоатомний спирт)"});
+def("Glucose","CuOH2_hot",{type:"precipitate",precipColor:"#cc4400",desc:"Цеглисто-червоний осад Cu₂O↓ (альдегідна група!)"});
+def("Glucose","AgNH3_r",{type:"color",solChange:"#c0c0c0",desc:"Срібне дзеркало — Ag↓ (альдегід!)"});
+
+def("Glycerol","CuOH2",{type:"color",solChange:"#2244dd",desc:"Яскраво-синій розчин (гліцерат міді)"});
+
+def("HCHO","CuOH2_hot",{type:"precipitate",precipColor:"#cc4400",desc:"Цеглисто-червоний осад Cu₂O↓ (альдегід!)"});
+def("HCHO","AgNH3_r",{type:"color",solChange:"#c0c0c0",desc:"Срібне дзеркало — Ag↓ (альдегід!)"});
+
+Object.keys(SUBSTANCES).forEach(fill);
+
+/* ═══════════ CHALLENGES ═══════════ */
+const CHALLENGES=[
+  {id:1,level:1,title:"Сіль чи луг?",desc:"NaCl чи NaOH?",substances:["NaCl","NaOH"],optimalReagents:1,hint:"Індикатор!"},
+  {id:2,level:1,title:"Кислота чи сіль?",desc:"HCl чи NaCl?",substances:["HCl","NaCl"],optimalReagents:1,hint:"Лакмус!"},
+  {id:3,level:1,title:"Дві кислоти",desc:"HCl чи H₂SO₄?",substances:["HCl","H2SO4"],optimalReagents:1,hint:"BaCl₂ — на сульфат"},
+  {id:4,level:1,title:"Fe²⁺ чи Fe³⁺?",desc:"FeCl₂ чи FeCl₃?",substances:["FeCl3","FeCl2"],optimalReagents:1,hint:"KSCN — на Fe³⁺"},
+  {id:5,level:2,title:"Три галогеніди",desc:"NaCl, NaBr, KI",substances:["NaCl","NaBr","KI"],optimalReagents:1,hint:"AgNO₃: різні кольори осадів"},
+  {id:6,level:2,title:"Кислота, луг, сіль",desc:"NaOH, HCl, NaCl",substances:["NaOH","HCl","NaCl"],optimalReagents:1,hint:"Лакмус — 3 кольори"},
+  {id:7,level:2,title:"Три катіони",desc:"FeCl₃, CuSO₄, NaCl",substances:["FeCl3","CuSO4","NaCl"],optimalReagents:1,hint:"NaOH → різні осади"},
+  {id:8,level:2,title:"Карбонат, сульфат, хлорид",desc:"Na₂CO₃, Na₂SO₄, NaCl",substances:["Na2CO3","Na2SO4","NaCl"],optimalReagents:2,hint:"HCl+BaCl₂"},
+  {id:9,level:3,title:"Луг, карбонат, сіль",desc:"NaOH, Na₂CO₃, NaCl",substances:["NaOH","Na2CO3","NaCl"],optimalReagents:2,hint:"Фф + HCl"},
+  {id:10,level:3,title:"Силікат у компанії",desc:"Na₂SiO₃, Na₂CO₃, NaOH",substances:["Na2SiO3","Na2CO3","NaOH"],optimalReagents:2,hint:"HCl: газ vs осад"},
+  {id:11,level:3,title:"Амоній серед хлоридів",desc:"NH₄Cl, NaCl, AlCl₃",substances:["NH4Cl","NaCl","AlCl3"],optimalReagents:2,hint:"NaOH: осад vs запах vs нічого"},
+  {id:12,level:3,title:"Альдегід чи спирт?",desc:"Глюкоза, гліцерин, формальдегід",substances:["Glucose","Glycerol","HCHO"],optimalReagents:2,hint:"Cu(OH)₂ без нагрівання + з нагріванням"},
+  {id:13,level:4,title:"Четвірка солей",desc:"NaCl, NaBr, Na₂SO₄, Na₂CO₃",substances:["NaCl","NaBr","Na2SO4","Na2CO3"],optimalReagents:2,hint:"HCl + AgNO₃"},
+  {id:14,level:4,title:"Лабораторний мікс",desc:"NaOH, HCl, FeCl₃, CuSO₄",substances:["NaOH","HCl","FeCl3","CuSO4"],optimalReagents:2,hint:"NaOH + лакмус"},
+  {id:15,level:4,title:"Сульфід у компанії",desc:"Na₂S, Na₂CO₃, Na₂SO₄, NaCl",substances:["Na2S","Na2CO3","Na2SO4","NaCl"],optimalReagents:2,hint:"HCl: запах vs газ. BaCl₂"},
+  {id:16,level:4,title:"Фінальний виклик",desc:"Na₂CO₃, Na₂SiO₃, NaOH, Na₂SO₄",substances:["Na2CO3","Na2SiO3","NaOH","Na2SO4"],optimalReagents:3,hint:"Фф + HCl + BaCl₂"},
+];
+
+const LEVEL_META=[
+  {level:1,title:"Дві пробірки",icon:"🧪",color:"#059669"},
+  {level:2,title:"Три пробірки",icon:"🔬",color:"#0284c7"},
+  {level:3,title:"Крок за кроком",icon:"🧩",color:"#7c3aed"},
+  {level:4,title:"Детектив",icon:"🕵️",color:"#e11d48"},
+];
+
+const REAGENT_CATS=[
+  {id:"indicators",label:"Індикатори"},
+  {id:"acids",label:"Кислоти"},
+  {id:"bases",label:"Луги"},
+  {id:"salts",label:"Солі"},
+  {id:"special",label:"Спеціальні"},
+];
+
+/* ═══════════ BADGES ═══════════ */
+var BADGES=[
+  {id:"first_exp",icon:"🧪",name:"Перший дослід",desc:"Пройди перше завдання",check:function(p){return Object.keys(p.done).length>=1;}},
+  {id:"sharpshoot",icon:"🎯",name:"Влучний постріл",desc:"Розв'яжи завдання з 3 зірками",check:function(p){for(var k in p.done)if(p.done[k].stars===3)return true;return false;}},
+  {id:"lvl1_done",icon:"🔬",name:"Хімік-початківець",desc:"Пройди всі завдання рівня 1",check:function(p){return[1,2,3,4].every(function(id){return p.done[id];});}},
+  {id:"lvl2_done",icon:"📐",name:"Аналітик",desc:"Пройди всі завдання рівня 2",check:function(p){return[5,6,7,8].every(function(id){return p.done[id];});}},
+  {id:"lvl3_done",icon:"🧩",name:"Стратег",desc:"Пройди всі завдання рівня 3",check:function(p){return[9,10,11,12].every(function(id){return p.done[id];});}},
+  {id:"lvl4_done",icon:"🕵️",name:"Детектив",desc:"Пройди всі завдання рівня 4",check:function(p){return[13,14,15,16].every(function(id){return p.done[id];});}},
+  {id:"perfect3",icon:"⚡",name:"Бездоганний",desc:"Отримай 3 зірки у 3 різних завданнях",check:function(p){var c=0;for(var k in p.done)if(p.done[k].stars===3)c++;return c>=3;}},
+  {id:"all_done",icon:"🏆",name:"Майстер хімії",desc:"Пройди всі 16 завдань",check:function(p){return Object.keys(p.done).length>=16;}},
+  {id:"all_perfect",icon:"💎",name:"Перфекціоніст",desc:"Усі 16 завдань з 3 зірками",check:function(p){var c=0;for(var k in p.done)if(p.done[k].stars===3)c++;return c>=16;}},
+  {id:"organic",icon:"⚗️",name:"Органік",desc:"Пройди завдання з органікою (#12)",check:function(p){return!!p.done[12];}},
+  {id:"no_hint",icon:"🧠",name:"Без підказок",desc:"Пройди будь-яке завдання без підказки",check:function(p){for(var k in p.done)if(p.done[k].noHint)return true;return false;}},
+];
+
+var SAVE_KEY="chem_detective_v2";
+function loadProg(){try{var d=JSON.parse(localStorage.getItem(SAVE_KEY));if(d&&d.ver===2)return d;}catch(e){}return{ver:2,done:{},badges:[]};}
+function saveProg(p){try{localStorage.setItem(SAVE_KEY,JSON.stringify(p));}catch(e){}}
+function checkBadges(p){
+  var newB=[];
+  BADGES.forEach(function(b){
+    if(p.badges.indexOf(b.id)===-1&&b.check(p)){p.badges.push(b.id);newB.push(b);}
+  });
+  return newB;
+}
+
+function shuffle(a){var b=[].concat(a);for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
+
+/* ═══════════ COMPONENTS ═══════════ */
+
+function TestTube(p){
+  var sub=SUBSTANCES[p.substance];
+  var liq=sub&&sub.solColor?sub.solColor:"#a0c0dd";
+  var prec=null,showB=false,showS=false;
+  if(p.reactions&&p.reactions.length){
+    var tr=p.reactions;
+    for(var i=tr.length-1;i>=0;i--){if(tr[i].result.type==="indicator"||tr[i].result.type==="color"){liq=tr[i].result.solChange;break;}}
+    for(var i=tr.length-1;i>=0;i--){if(tr[i].result.type==="precipitate"||tr[i].result.type==="gas_precip"){prec=tr[i].result.precipColor;break;}}
+    var last=tr[tr.length-1];
+    if(last&&(last.result.type==="gas"||last.result.type==="gas_precip"))showB=true;
+    if(last&&last.result.type==="smell")showS=true;
+  }
+  var W=48,H=108;
+  var isLt=prec&&parseInt(prec.slice(1,3),16)>180;
+  var bubbles=[];
+  if(showB)for(var i=0;i<5;i++)bubbles.push(h('div',{key:i,style:{position:"absolute",bottom:18+Math.random()*20,left:8+Math.random()*(W-22),width:5+Math.random()*3,height:5+Math.random()*3,borderRadius:"50%",background:"rgba(255,255,255,.6)",border:"1px solid rgba(255,255,255,.3)",animation:"bubbleUp "+(1+Math.random())+"s ease-in infinite",animationDelay:i*.25+"s"}}));
+  var smells=[];
+  if(showS)for(var i=0;i<3;i++)smells.push(h('div',{key:i,style:{position:"absolute",top:-8,left:W/2-7+(i-1)*10,width:14,height:14,borderRadius:"50%",background:"rgba(160,150,80,.25)",animation:"smellWave 1.5s ease-in-out infinite",animationDelay:i*.35+"s"}}));
+
+  return h('div',{onClick:p.onClick,style:{display:"flex",flexDirection:"column",alignItems:"center",gap:6,cursor:"pointer",transition:"transform .2s",transform:p.selected?"scale(1.08)":"scale(1)"}},
+    h('div',{style:{position:"relative",width:W,height:H,border:"2px solid "+(p.selected?"#0284c7":"#c0bdb5"),borderTop:"none",borderRadius:"0 0 "+W/2+"px "+W/2+"px",background:"linear-gradient(180deg,rgba(255,255,255,.85),rgba(235,232,225,.6))",boxShadow:p.selected?"0 0 0 3px #0284c744":"none",overflow:"hidden",transition:"all .3s"}},
+      h('div',{style:{position:"absolute",top:-4,left:-5,right:-5,height:8,background:p.selected?"#0284c7":"#b0ada5",borderRadius:"4px 4px 0 0",transition:"background .3s"}}),
+      h('div',{style:{position:"absolute",bottom:0,left:0,right:0,height:"68%",background:liq,opacity:.75,borderRadius:"0 0 "+(W/2-2)+"px "+(W/2-2)+"px",transition:"background .5s"}},
+        h('div',{style:{position:"absolute",top:2,left:3,width:5,height:"55%",background:"rgba(255,255,255,.4)",borderRadius:3}})
+      ),
+      prec&&h('div',{style:{position:"absolute",bottom:0,left:0,right:0,height:16,background:prec,borderRadius:"0 0 "+(W/2-2)+"px "+(W/2-2)+"px",animation:"precipForm .5s ease both",boxShadow:isLt?"inset 0 1px 4px rgba(0,0,0,.2), 0 -1px 0 rgba(0,0,0,.08)":"inset 0 1px 3px rgba(0,0,0,.3)",border:isLt?"1px solid rgba(0,0,0,.1)":"none"}}),
+      bubbles,smells,
+      !p.revealed&&!p.guessed&&h('div',{style:{position:"absolute",top:"28%",left:"50%",transform:"translate(-50%,-50%)",fontSize:18,color:"rgba(0,0,0,.15)",fontWeight:800,fontFamily:"'IBM Plex Mono',monospace"}},"?")
+    ),
+    h('div',{style:{background:p.guessed?"#05966912":p.revealed?"#0284c712":"#fff",border:"1.5px solid "+(p.guessed?"#059669":p.revealed?"#0284c7":"#d5d3cb"),borderRadius:8,padding:"3px 10px",fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:600,color:p.guessed?"#059669":p.revealed?"#0284c7":"#999",textAlign:"center",minWidth:48,transition:"all .3s"}},
+      p.revealed?sub.formula:p.guessed?SUBSTANCES[p.guessed].formula:"#"+(p.index+1)
+    )
+  );
+}
+
+function ReagentBottle(p){
+  var r=p.reagent,s=p.selected;
+  return h('button',{onClick:p.onClick,style:{display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"7px 5px 5px",width:66,background:s?"#0284c710":"#fff",border:"1.5px solid "+(s?"#0284c7":"#e0ddd5"),borderRadius:10,transition:"all .2s",transform:s?"translateY(-3px)":"translateY(0)",boxShadow:s?"0 4px 12px rgba(2,132,199,.12)":"0 1px 3px rgba(0,0,0,.03)"}},
+    h('span',{style:{fontSize:17}},r.icon),
+    h('span',{style:{fontSize:9,fontWeight:700,color:s?"#0284c7":"#444",fontFamily:"'IBM Plex Mono',monospace",lineHeight:"1.1",textAlign:"center"}},r.formula)
+  );
+}
+
+function ObsLog(p){
+  if(!p.obs.length)return null;
+  function ic(t){return t==="precipitate"||t==="gas_precip"?"⬇️":t==="gas"?"💨":t==="color"?"🎨":t==="indicator"?"📏":t==="smell"?"👃":"—";}
+  return h('div',{style:{background:"#fff",border:"1px solid #e0ddd5",borderRadius:14,padding:14,marginBottom:14}},
+    h('p',{style:{fontSize:11,fontWeight:700,color:"#999",marginBottom:8,fontFamily:"'IBM Plex Mono',monospace",textTransform:"uppercase",letterSpacing:1}},"📋 Журнал"),
+    h('div',{style:{display:"flex",flexDirection:"column",gap:4}},
+      p.obs.map(function(o,i){return h('div',{key:i,style:{display:"flex",gap:6,alignItems:"flex-start",padding:"5px 8px",background:"#faf9f6",borderRadius:8,animation:"dropIn .3s ease both",animationDelay:i*.03+"s"}},
+        h('span',{style:{fontSize:11,fontFamily:"'IBM Plex Mono',monospace",color:"#0284c7",flexShrink:0,minWidth:22,fontWeight:600}},"#"+(o.tube+1)),
+        h('span',{style:{fontSize:10,color:"#aaa",flexShrink:0,fontFamily:"'IBM Plex Mono',monospace"}},"+"+o.reagentFormula),
+        h('span',{style:{fontSize:11}},ic(o.result.type)),
+        h('span',{style:{fontSize:11,color:o.result.type==="none"?"#ccc":"#444",lineHeight:"1.3"}},o.result.desc)
+      );})
+    )
+  );
+}
+
+function GuessPanel(p){
+  var ch=p.challenge,gu=p.guesses,sG=p.setGuesses;
+  var subs=ch.substances.map(function(s){return SUBSTANCES[s];});
+  var ok=Object.keys(gu).length===ch.substances.length;
+  if(ok)for(var k in gu)if(gu[k]===null){ok=false;break;}
+  return h('div',{style:{background:"#fff",border:"1.5px solid #e0ddd5",borderRadius:16,padding:18,marginBottom:14,animation:"fadeIn .3s ease"}},
+    h('p',{style:{fontSize:14,fontWeight:700,marginBottom:14,color:"#c2410c"}},"🏷️ Підпиши кожну пробірку:"),
+    ch.substances.map(function(_,ti){
+      return h('div',{key:ti,style:{display:"flex",alignItems:"center",gap:10,marginBottom:10}},
+        h('span',{style:{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,color:"#0284c7",minWidth:28,fontWeight:700}},"#"+(ti+1)),
+        h('div',{style:{display:"flex",gap:6,flexWrap:"wrap",flex:1}},
+          subs.map(function(sub,si){
+            var sid=ch.substances[si],isSel=gu[ti]===sid;
+            var used=false;for(var k in gu)if(gu[k]===sid&&parseInt(k)!==ti){used=true;break;}
+            return h('button',{key:si,onClick:function(){
+              var g=Object.assign({},gu);
+              if(isSel)g[ti]=null;
+              else{for(var k in g)if(g[k]===sid)g[k]=null;g[ti]=sid;}
+              sG(g);
+            },style:{padding:"5px 12px",background:isSel?"#05966612":"#faf9f6",border:"1.5px solid "+(isSel?"#059669":used?"#eee":"#d5d3cb"),borderRadius:8,fontSize:13,fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,color:isSel?"#059669":used?"#ccc":"#444",opacity:used&&!isSel?.35:1,transition:"all .2s"}},sub.formula);
+          })
+        )
+      );
+    }),
+    h('div',{style:{display:"flex",gap:10,marginTop:16}},
+      h('button',{onClick:p.onSubmit,disabled:!ok,style:{flex:1,padding:"12px 20px",background:ok?"linear-gradient(135deg,#059669,#0284c7)":"#eee",borderRadius:12,color:ok?"#fff":"#ccc",fontSize:15,fontWeight:700,opacity:ok?1:.5,transition:"all .3s"}},"✓ Перевірити"),
+      h('button',{onClick:p.onCancel,style:{padding:"12px 20px",background:"#faf9f6",border:"1px solid #d5d3cb",borderRadius:12,color:"#888",fontSize:14}},"← Назад")
+    )
+  );
+}
+
+function ResultScreen(p){
+  var ch=p.challenge,so=p.shuffledOrder,gu=p.guesses,ru=p.reagentsUsed;
+  var cc=0;so.forEach(function(s,i){if(gu[i]===s)cc++;});
+  var t=ch.substances.length,ok=cc===t;
+  var st=ru<=ch.optimalReagents?3:ru<=ch.optimalReagents+1?2:1;
+  var fs=ok?st:0;
+
+  // Save progress & check badges
+  var _nb=useState([]),newBadges=_nb[0],setNewBadges=_nb[1];
+  useEffect(function(){
+    if(!ok)return;
+    var prog=loadProg();
+    var prev=prog.done[ch.id];
+    if(!prev||fs>prev.stars){
+      prog.done[ch.id]={stars:fs,reagents:ru,noHint:!p.usedHint};
+    }
+    if(!prev&&!p.usedHint){
+      prog.done[ch.id]=prog.done[ch.id]||{};
+      prog.done[ch.id].noHint=true;
+    }
+    var nb=checkBadges(prog);
+    saveProg(prog);
+    if(nb.length)setNewBadges(nb);
+    if(p.onProgress)p.onProgress();
+  },[]);
+
+  return h('div',{style:{textAlign:"center",animation:"popIn .5s ease",padding:"20px 0"}},
+    h('div',{style:{fontSize:48,marginBottom:8}},ok?"🎉":"😔"),
+    h('h2',{style:{fontSize:22,marginBottom:6,fontWeight:800,color:"#222"}},ok?"Правильно!":cc+" з "+t),
+    ok&&h('div',{style:{fontSize:36,marginBottom:6}},"⭐".repeat(fs)+"☆".repeat(3-fs)),
+    h('p',{style:{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,color:"#888",marginBottom:4}},"Реактивів: "+ru+" (оптимально: "+ch.optimalReagents+")"),
+    ok&&ru<=ch.optimalReagents&&h('p',{style:{color:"#059669",fontSize:14,fontWeight:700,marginBottom:14}},"Мінімум реактивів! 🏆"),
+    ok&&ru>ch.optimalReagents&&h('p',{style:{color:"#c2410c",fontSize:13,marginBottom:14}},"Можна менше — спробуй ще!"),
+    // New badges
+    newBadges.length>0&&h('div',{style:{margin:"12px 0",animation:"popIn .5s ease .3s both"}},
+      h('p',{style:{fontSize:13,fontWeight:700,color:"#7c3aed",marginBottom:8}},"🏅 Нові бейджі!"),
+      newBadges.map(function(b){return h('div',{key:b.id,style:{display:"inline-flex",alignItems:"center",gap:6,background:"#7c3aed10",border:"1px solid #7c3aed33",borderRadius:10,padding:"6px 14px",margin:"0 4px 6px",animation:"popIn .4s ease"}},
+        h('span',{style:{fontSize:20}},b.icon),
+        h('span',{style:{fontSize:13,fontWeight:700,color:"#7c3aed"}},b.name)
+      );})
+    ),
+    // Answers
+    h('div',{style:{background:"#fff",border:"1px solid #e0ddd5",borderRadius:12,padding:14,margin:"14px 0",textAlign:"left"}},
+      so.map(function(s,i){var c=gu[i]===s;return h('div',{key:i,style:{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<so.length-1?"1px solid #f0ede8":"none"}},
+        h('span',{style:{fontFamily:"'IBM Plex Mono',monospace",fontSize:12,color:"#0284c7",fontWeight:600}},"#"+(i+1)),
+        h('span',{style:{fontSize:18}},c?"✅":"❌"),
+        h('span',{style:{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,fontWeight:700,color:c?"#059669":"#e11d48"}},SUBSTANCES[s].formula),
+        h('span',{style:{fontSize:12,color:"#999"}},"— "+SUBSTANCES[s].name)
+      );})
+    ),
+    h('div',{style:{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}},
+      h('button',{onClick:p.onRetry,style:{padding:"12px 24px",background:"linear-gradient(135deg,#059669,#0284c7)",borderRadius:12,color:"#fff",fontSize:15,fontWeight:700}},ok?"Ще раз 🔄":"Спробувати ще 🔄"),
+      ok&&p.onNext&&h('button',{onClick:p.onNext,style:{padding:"12px 24px",background:"#7c3aed11",border:"1px solid #7c3aed44",borderRadius:12,color:"#7c3aed",fontSize:15,fontWeight:600}},"Далі →"),
+      h('button',{onClick:p.onHome,style:{padding:"12px 24px",background:"#faf9f6",border:"1px solid #d5d3cb",borderRadius:12,color:"#888",fontSize:14}},"Меню ←")
+    )
+  );
+}
+
+/* ═══════════ GAME SCREEN ═══════════ */
+function GameScreen(p){
+  var ch=CHALLENGES.find(function(c){return c.id===p.challengeId;});
+  var _so=useState([]),so=_so[0],setSo=_so[1];
+  var _sr=useState(null),sr=_sr[0],setSr=_sr[1];
+  var _tr=useState({}),tr=_tr[0],setTr=_tr[1];
+  var _obs=useState([]),obs=_obs[0],setObs=_obs[1];
+  var _ru=useState([]),ru=_ru[0],setRu=_ru[1]; // array of used reagent ids
+  var _ph=useState("experiment"),ph=_ph[0],setPh=_ph[1];
+  var _gu=useState({}),gu=_gu[0],setGu=_gu[1];
+  var _hint=useState(false),showHint=_hint[0],setHint=_hint[1];
+  var _everHint=useState(false),everHint=_everHint[0],setEverHint=_everHint[1];
+  var _lr=useState(null),lr=_lr[0],setLr=_lr[1];
+  var timer=useRef(null);
+
+  useEffect(function(){
+    setSo(shuffle(ch.substances));setSr(null);setTr({});setObs([]);setRu([]);setPh("experiment");setGu({});setHint(false);setEverHint(false);setLr(null);
+  },[p.challengeId]);
+
+  var onTube=useCallback(function(ti){
+    if(ph!=="experiment"||!sr)return;
+    var sid=so[ti];var rx=RX[sid]&&RX[sid][sr];if(!rx)return;
+    var done=false;obs.forEach(function(o){if(o.tube===ti&&o.reagentId===sr)done=true;});
+    if(done)return;
+    var rg;ALL_REAGENTS.forEach(function(r){if(r.id===sr)rg=r;});
+    var newTr=Object.assign({},tr);
+    newTr[ti]=(newTr[ti]||[]).concat([{reagentId:sr,result:rx}]);
+    setTr(newTr);
+    setObs(obs.concat([{tube:ti,reagentId:sr,reagentFormula:rg.formula,result:rx}]));
+    if(ru.indexOf(sr)===-1)setRu(ru.concat([sr]));
+    setLr({tube:ti,result:rx});
+    if(timer.current)clearTimeout(timer.current);
+    timer.current=setTimeout(function(){setLr(null);},2200);
+  },[ph,sr,so,obs,tr,ru]);
+
+  var retry=useCallback(function(){
+    setSo(shuffle(ch.substances));setSr(null);setTr({});setObs([]);setRu([]);setPh("experiment");setGu({});setHint(false);setEverHint(false);setLr(null);
+  },[ch]);
+
+  if(!so.length)return null;
+
+  return h('div',{style:{maxWidth:600,margin:"0 auto",padding:"0 14px"}},
+    // Top bar
+    h('div',{style:{display:"flex",alignItems:"center",gap:8,marginBottom:14}},
+      h('button',{onClick:p.onBack,style:{background:"none",color:"#999",fontSize:20,padding:"4px 6px"}},"←"),
+      h('div',{style:{flex:1}},
+        h('h3',{style:{fontSize:15,fontWeight:700,margin:0,color:"#222"}},ch.title),
+        h('p',{style:{fontSize:11,color:"#999",margin:0}},ch.desc)
+      ),
+      h('div',{style:{fontFamily:"'IBM Plex Mono',monospace",fontSize:12,color:"#888",background:"#fff",border:"1px solid #e0ddd5",borderRadius:8,padding:"3px 10px"}},"🧪×"+ru.length)
+    ),
+
+    ph==="result"&&h(ResultScreen,{challenge:ch,shuffledOrder:so,guesses:gu,reagentsUsed:ru.length,usedHint:everHint,onRetry:retry,onNext:p.onNext,onHome:p.onBack,onProgress:p.onProgress}),
+
+    ph==="guess"&&[
+      h('div',{key:"tubes",style:{display:"flex",justifyContent:"center",gap:22,marginBottom:18,padding:"14px 0"}},
+        so.map(function(s,i){return h(TestTube,{key:i,index:i,substance:s,reactions:tr[i],selected:false,onClick:function(){},guessed:gu[i]});})
+      ),
+      h(GuessPanel,{key:"gp",challenge:ch,guesses:gu,setGuesses:setGu,onSubmit:function(){setPh("result");},onCancel:function(){setPh("experiment");}})
+    ],
+
+    ph==="experiment"&&[
+      // Rack
+      h('div',{key:"rack",style:{background:"#fff",border:"1px solid #e0ddd5",borderRadius:16,padding:"20px 14px 16px",marginBottom:14,boxShadow:"0 2px 8px rgba(0,0,0,.03)"}},
+        h('p',{style:{fontSize:11,color:"#aaa",textAlign:"center",marginBottom:14,fontFamily:"'IBM Plex Mono',monospace"}},
+          sr?("▸ Натисни на пробірку, щоб додати "+(function(){var f="";ALL_REAGENTS.forEach(function(r){if(r.id===sr)f=r.formula;});return f;})()):"▸ Обери реактив, потім натисни на пробірку"
+        ),
+        h('div',{style:{display:"flex",justifyContent:"center",gap:26,alignItems:"flex-end"}},
+          so.map(function(s,i){return h(TestTube,{key:i,index:i,substance:s,reactions:tr[i],selected:sr!==null,onClick:function(){onTube(i);}});})
+        ),
+        h('div',{style:{marginTop:12,height:5,background:"#e8e5dd",borderRadius:3,marginLeft:-6,marginRight:-6}})
+      ),
+
+      // Toast
+      lr&&lr.result.type!=="none"&&h('div',{key:"toast",style:{background:"#05966610",border:"1px solid #05966633",borderRadius:12,padding:"8px 14px",marginBottom:10,animation:"fadeIn .25s ease",display:"flex",alignItems:"center",gap:8}},
+        h('span',{style:{fontSize:16}},(lr.result.type==="precipitate"||lr.result.type==="gas_precip")?"⬇️":lr.result.type==="gas"?"💨":lr.result.type==="color"?"🎨":lr.result.type==="indicator"?"📏":"👃"),
+        h('span',{style:{fontSize:13,color:"#059669",fontWeight:600}},lr.result.desc)
+      ),
+
+      // Reagents shelf
+      h('div',{key:"shelf",style:{background:"#fff",border:"1px solid #e0ddd5",borderRadius:14,padding:14,marginBottom:12,boxShadow:"0 2px 8px rgba(0,0,0,.03)"}},
+        h('p',{style:{fontSize:11,color:"#aaa",marginBottom:10,fontFamily:"'IBM Plex Mono',monospace",textTransform:"uppercase",letterSpacing:1}},"🧴 Стіл з реактивами"),
+        REAGENT_CATS.map(function(cat){
+          var items=ALL_REAGENTS.filter(function(r){return r.cat===cat.id;});
+          return h('div',{key:cat.id,style:{marginBottom:8}},
+            h('p',{style:{fontSize:10,fontWeight:700,color:"#bbb",marginBottom:5,fontFamily:"'IBM Plex Mono',monospace"}},cat.label),
+            h('div',{style:{display:"flex",gap:5,flexWrap:"wrap"}},
+              items.map(function(r){return h(ReagentBottle,{key:r.id,reagent:r,selected:sr===r.id,onClick:function(){setSr(sr===r.id?null:r.id);}});})
+            )
+          );
+        })
+      ),
+
+      h(ObsLog,{key:"log",obs:obs}),
+
+      h('div',{key:"btns",style:{display:"flex",gap:10,marginBottom:14}},
+        h('button',{onClick:function(){setPh("guess");setGu({});},disabled:obs.length===0,style:{flex:1,padding:"13px 20px",background:obs.length>0?"linear-gradient(135deg,#059669,#0284c7)":"#eee",borderRadius:12,color:obs.length>0?"#fff":"#ccc",fontSize:15,fontWeight:700,opacity:obs.length>0?1:.5,transition:"all .3s"}},"🏷️ Відповісти"),
+        h('button',{onClick:function(){var v=!showHint;setHint(v);if(v)setEverHint(true);},style:{padding:"13px 16px",background:"#fff",border:"1px solid #e0ddd5",borderRadius:12,color:showHint?"#c2410c":"#ccc",fontSize:14}},"💡")
+      ),
+
+      showHint&&h('div',{key:"hint",style:{background:"#fef3c7",border:"1px solid #f59e0b44",borderRadius:12,padding:"10px 14px",marginBottom:14,animation:"fadeIn .25s ease"}},
+        h('p',{style:{fontSize:13,color:"#92400e",margin:0}},"💡 "+ch.hint)
+      )
+    ]
+  );
+}
+
+/* ═══════════ REFERENCE ═══════════ */
+function RefScreen(p){
+  var _sel=useState(null),sel=_sel[0],setSel=_sel[1];
+  var keys=Object.keys(SUBSTANCES);
+  var sub=sel?SUBSTANCES[sel]:null;
+  return h('div',{style:{maxWidth:600,margin:"0 auto",padding:"0 14px"}},
+    h('div',{style:{display:"flex",alignItems:"center",gap:10,marginBottom:18}},
+      h('button',{onClick:p.onBack,style:{background:"none",color:"#999",fontSize:20,padding:"4px 6px"}},"←"),
+      h('h3',{style:{fontSize:18,fontWeight:700,color:"#222"}},"📖 Таблиця реакцій")
+    ),
+    h('p',{style:{fontSize:12,color:"#999",marginBottom:12}},"Обери речовину:"),
+    h('div',{style:{display:"flex",flexWrap:"wrap",gap:5,marginBottom:18}},
+      keys.map(function(k){var s=SUBSTANCES[k],a=sel===k;
+        return h('button',{key:k,onClick:function(){setSel(a?null:k);},style:{padding:"5px 10px",borderRadius:8,fontSize:12,fontFamily:"'IBM Plex Mono',monospace",fontWeight:a?700:500,background:a?"#0284c715":"#fff",border:"1.5px solid "+(a?"#0284c7":"#e0ddd5"),color:a?"#0284c7":"#555",transition:"all .2s"}},s.formula);
+      })
+    ),
+    sub&&h('div',{style:{animation:"fadeIn .3s ease",background:"#fff",border:"1px solid #e0ddd5",borderRadius:14,padding:16,marginBottom:16}},
+      h('h4',{style:{fontSize:16,fontWeight:700,color:"#0284c7",fontFamily:"'IBM Plex Mono',monospace",marginBottom:2}},sub.formula),
+      h('p',{style:{fontSize:12,color:"#999",marginBottom:14}},sub.name),
+      h('div',{style:{display:"flex",flexDirection:"column",gap:6}},
+        ALL_REAGENTS.map(function(r){
+          var rx=RX[sel]&&RX[sel][r.id];if(!rx)return null;var none=rx.type==="none";
+          return h('div',{key:r.id,style:{display:"flex",alignItems:"center",gap:8,padding:"6px 8px",background:"#faf9f6",borderRadius:8,opacity:none?.35:1}},
+            h('span',{style:{fontSize:11,fontFamily:"'IBM Plex Mono',monospace",color:"#0284c7",minWidth:80,fontWeight:600}},"+"+r.formula),
+            rx.precipColor&&h('div',{style:{width:14,height:14,borderRadius:4,background:rx.precipColor,flexShrink:0,border:"1px solid rgba(0,0,0,.1)"}}),
+            (rx.type==="indicator"||rx.type==="color")&&rx.solChange&&h('div',{style:{width:14,height:14,borderRadius:"50%",background:rx.solChange,flexShrink:0,border:"1px solid rgba(0,0,0,.06)"}}),
+            h('span',{style:{fontSize:11,color:none?"#ccc":"#444",lineHeight:"1.3"}},rx.desc)
+          );
+        })
+      )
+    ),
+    !sub&&h('div',{style:{background:"#fff",border:"1px solid #e0ddd5",borderRadius:14,padding:24,textAlign:"center",color:"#ccc",fontSize:14}},"☝️ Обери речовину")
+  );
+}
+
+/* ═══════════ HOME ═══════════ */
+function HomeScreen(p){
+  var prog=p.progress||loadProg();
+  var totalStars=0,doneCount=Object.keys(prog.done).length;
+  for(var k in prog.done)totalStars+=prog.done[k].stars||0;
+  var earnedBadges=BADGES.filter(function(b){return prog.badges.indexOf(b.id)!==-1;});
+  var _showBadges=useState(false),showBadges=_showBadges[0],setShowBadges=_showBadges[1];
+
+  return h('div',{style:{maxWidth:560,margin:"0 auto",padding:"0 14px"}},
+    h('div',{style:{textAlign:"center",marginBottom:24,paddingTop:20,animation:"fadeIn .5s ease"}},
+      h('div',{style:{fontSize:52,marginBottom:4,animation:"float 3s ease-in-out infinite"}},"🧪"),
+      h('h1',{style:{fontSize:28,fontWeight:800,letterSpacing:.5,background:"linear-gradient(135deg,#059669,#0284c7,#7c3aed)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",margin:"0 0 4px"}},"ХімДетектив"),
+      h('p',{style:{color:"#999",fontSize:13}},"Лабораторія якісних реакцій")
+    ),
+    // Stats bar
+    h('div',{style:{display:"flex",gap:8,marginBottom:16,animation:"fadeIn .5s ease .05s both"}},
+      h('div',{style:{flex:1,background:"#fff",border:"1px solid #e0ddd5",borderRadius:12,padding:"10px 8px",textAlign:"center"}},
+        h('div',{style:{fontSize:18,fontWeight:700,fontFamily:"'IBM Plex Mono',monospace",color:"#059669"}},totalStars+"/48"),
+        h('div',{style:{fontSize:10,color:"#aaa",textTransform:"uppercase",letterSpacing:1,marginTop:1}},"⭐ зірок")
+      ),
+      h('div',{style:{flex:1,background:"#fff",border:"1px solid #e0ddd5",borderRadius:12,padding:"10px 8px",textAlign:"center"}},
+        h('div',{style:{fontSize:18,fontWeight:700,fontFamily:"'IBM Plex Mono',monospace",color:"#0284c7"}},doneCount+"/16"),
+        h('div',{style:{fontSize:10,color:"#aaa",textTransform:"uppercase",letterSpacing:1,marginTop:1}},"✅ пройдено")
+      ),
+      h('div',{style:{flex:1,background:"#fff",border:"1px solid #e0ddd5",borderRadius:12,padding:"10px 8px",textAlign:"center"}},
+        h('div',{style:{fontSize:18,fontWeight:700,fontFamily:"'IBM Plex Mono',monospace",color:"#7c3aed"}},earnedBadges.length+"/"+BADGES.length),
+        h('div',{style:{fontSize:10,color:"#aaa",textTransform:"uppercase",letterSpacing:1,marginTop:1}},"🏅 бейджі")
+      )
+    ),
+    // Badges button
+    h('button',{onClick:function(){setShowBadges(!showBadges);},style:{width:"100%",padding:"12px 16px",background:"#fff",border:"1px solid #e0ddd5",borderRadius:14,display:"flex",alignItems:"center",gap:12,marginBottom:10,color:"#444",transition:"border-color .2s",boxShadow:"0 2px 8px rgba(0,0,0,.03)",animation:"fadeIn .5s ease .08s both"},onMouseEnter:function(e){e.currentTarget.style.borderColor="#7c3aed";},onMouseLeave:function(e){e.currentTarget.style.borderColor="#e0ddd5";}},
+      h('span',{style:{fontSize:22}},"🏅"),
+      h('div',{style:{textAlign:"left",flex:1}},
+        h('p',{style:{fontSize:14,fontWeight:700,margin:0}},"Бейджі"),
+        h('p',{style:{fontSize:11,color:"#999",margin:0}},earnedBadges.length?" Отримано: "+earnedBadges.map(function(b){return b.icon;}).join(" "):"Проходь завдання — отримуй нагороди!")
+      ),
+      h('span',{style:{fontSize:12,color:"#bbb",transition:"transform .2s",transform:showBadges?"rotate(90deg)":"rotate(0)",display:"inline-block"}},"▶")
+    ),
+    // Badges grid
+    showBadges&&h('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14,animation:"fadeIn .3s ease"}},
+      BADGES.map(function(b){
+        var earned=prog.badges.indexOf(b.id)!==-1;
+        return h('div',{key:b.id,style:{background:earned?"#fff":"#faf9f6",border:"1px solid "+(earned?"#7c3aed33":"#e8e5dd"),borderRadius:12,padding:"10px 12px",opacity:earned?1:.5,transition:"all .2s"}},
+          h('div',{style:{display:"flex",alignItems:"center",gap:6,marginBottom:4}},
+            h('span',{style:{fontSize:20,filter:earned?"none":"grayscale(1)"}},b.icon),
+            h('span',{style:{fontSize:12,fontWeight:700,color:earned?"#7c3aed":"#aaa"}},b.name)
+          ),
+          h('p',{style:{fontSize:10,color:earned?"#888":"#ccc",margin:0,lineHeight:"1.3"}},b.desc)
+        );
+      })
+    ),
+    // Reference
+    h('button',{onClick:p.onRef,style:{width:"100%",padding:"14px 16px",background:"#fff",border:"1px solid #e0ddd5",borderRadius:14,display:"flex",alignItems:"center",gap:12,marginBottom:18,color:"#444",transition:"border-color .2s",boxShadow:"0 2px 8px rgba(0,0,0,.03)",animation:"fadeIn .5s ease .1s both"},onMouseEnter:function(e){e.currentTarget.style.borderColor="#0284c7";},onMouseLeave:function(e){e.currentTarget.style.borderColor="#e0ddd5";}},
+      h('span',{style:{fontSize:24}},"📖"),
+      h('div',{style:{textAlign:"left"}},
+        h('p',{style:{fontSize:14,fontWeight:700,margin:0}},"Таблиця реакцій"),
+        h('p',{style:{fontSize:11,color:"#999",margin:0}},"Довідник: речовина + реактив → результат")
+      )
+    ),
+    LEVEL_META.map(function(lm){
+      var cs=CHALLENGES.filter(function(c){return c.level===lm.level;});
+      return h('div',{key:lm.level,style:{marginBottom:20,animation:"fadeIn .5s ease "+(.12+lm.level*.08)+"s both"}},
+        h('div',{style:{display:"flex",alignItems:"center",gap:8,marginBottom:10}},
+          h('span',{style:{fontSize:20}},lm.icon),
+          h('h3',{style:{fontSize:15,fontWeight:700,margin:0,color:lm.color}},"Рівень "+lm.level+": "+lm.title)
+        ),
+        h('div',{style:{display:"flex",flexDirection:"column",gap:7,paddingLeft:6}},
+          cs.map(function(c){
+            var best=prog.done[c.id];
+            var starsStr=best?"⭐".repeat(best.stars)+"☆".repeat(3-best.stars):"";
+            return h('button',{key:c.id,onClick:function(){p.onSelect(c.id);},style:{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:"#fff",border:"1px solid "+(best?"#05966622":"#e0ddd5"),borderRadius:12,color:"#444",textAlign:"left",transition:"all .2s",boxShadow:"0 1px 4px rgba(0,0,0,.02)"},onMouseEnter:function(e){e.currentTarget.style.borderColor=lm.color;e.currentTarget.style.transform="translateX(3px)";},onMouseLeave:function(e){e.currentTarget.style.borderColor=best?"#05966622":"#e0ddd5";e.currentTarget.style.transform="translateX(0)";}},
+              h('div',{style:{width:34,height:34,borderRadius:9,background:lm.color+"12",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,fontFamily:"'IBM Plex Mono',monospace",color:lm.color,flexShrink:0}},c.id),
+              h('div',{style:{flex:1,minWidth:0}},
+                h('p',{style:{fontSize:14,fontWeight:700,margin:"0 0 1px",color:"#333"}},c.title),
+                h('p',{style:{fontSize:11,color:"#999",margin:0,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},c.desc)
+              ),
+              h('span',{style:{fontSize:11,color:"#ccc",fontFamily:"'IBM Plex Mono',monospace",flexShrink:0}},c.substances.length+"🧪"),
+              best&&h('span',{style:{fontSize:11,flexShrink:0}},starsStr)
+            );
+          })
+        )
+      );
+    }),
+    h('p',{style:{textAlign:"center",color:"#ddd",fontSize:11,marginTop:20,fontFamily:"'IBM Plex Mono',monospace"}},"ХімДетектив v2.0 • ЗНО/НМТ")
+  );
+}
+
+/* ═══════════ APP ═══════════ */
+function App(){
+  var _sc=useState("home"),sc=_sc[0],setSc=_sc[1];
+  var _ac=useState(null),ac=_ac[0],setAc=_ac[1];
+  var _prog=useState(loadProg()),prog=_prog[0],setProg=_prog[1];
+  var refresh=function(){setProg(loadProg());};
+  var next=useCallback(function(){
+    var i=-1;CHALLENGES.forEach(function(c,idx){if(c.id===ac)i=idx;});
+    if(i<CHALLENGES.length-1)setAc(CHALLENGES[i+1].id);else setSc("home");
+  },[ac]);
+
+  return h('div',{style:{minHeight:"100vh",background:"#f4f2ee",padding:"14px 0 40px"}},
+    sc==="home"&&h(HomeScreen,{progress:prog,onSelect:function(id){setAc(id);setSc("game");},onRef:function(){setSc("reference");}}),
+    sc==="game"&&ac&&h(GameScreen,{key:ac,challengeId:ac,onBack:function(){refresh();setSc("home");},onNext:next,onProgress:refresh}),
+    sc==="reference"&&h(RefScreen,{onBack:function(){setSc("home");}})
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(h(App));
+</script>
+</body>
+</html>
